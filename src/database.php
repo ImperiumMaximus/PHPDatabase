@@ -269,11 +269,11 @@ class DatabaseDriver {
             return $name;
     }
     
-    public function quote($value) {
+    public function quote($value, $real_escape = true) {
         $value = trim($value);
         if (("string" == gettype($value)) && 
                 ("'" !== substr($value, 0, 1)) && ("'" !== substr($value, -1, 1)))
-            return "'" . $this->mysqliObj->real_escape_string($value) . "'";
+            return "'" . ($real_escape ? $this->mysqliObj->real_escape_string($value) : $value) . "'";
         else
             return $value;
     }
@@ -370,8 +370,26 @@ class DatabaseDriver {
         return $this->mysqliObj->query("set names utf8");
     }
     
-    public function isertid() {
+    public function insertid() {
         return $this->mysqliObj->insert_id;
+    }
+    
+    public function getTableList() {
+        $res = $this->mysqliObj->query("show tables");
+        while(($row = $res->fetch_row()) !== NULL)
+            $tables[] = $row[0];
+        return $tables;
+    }
+    
+    public function getTableColumns($table, $typeOnly = true) {
+        $res = $this->mysqliObj->query("describe " . ($this->getQuoteStrings() ? $this->quoteName($table) : $table));
+        while(($row = $res->fetch_row()) !== NULL)
+            $columns[] = ($typeOnly ? $row[1] : $row);
+        return $columns;
+    }
+    
+    public function disconnect() {
+        $this->mysqliObj->close();
     }
     
     private function __checkQueryObj() {

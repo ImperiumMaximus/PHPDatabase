@@ -1,7 +1,5 @@
 <?php
 
-require_once ('../src/database.php');
-
 class stdClassEquality extends stdClass implements Equality {
     public function Equals($obj) {
         return (get_object_vars($this) == get_object_vars($obj));
@@ -226,6 +224,7 @@ class SelectTestCase extends TestCase {
     }
     
     public function TearDown() {
+        $this->dbo->disconnect();
     }
 }
 

@@ -1,5 +1,5 @@
 <?php
-require_once ('database.php');
+require_once ('../src/database.php');
 $db = new DatabaseDriver('localhost', 'testuser', 'jEv5HWz9Wf726WKD', 'testuser');
 
 $query = $db->getQuery(true);
@@ -7,8 +7,10 @@ $query->select(array('name', 'surname'))->from('test_table')->where($db->whereCl
 echo $query->toString() . "<br/>";
 $db->setQuery($query);
 var_dump($objList = $db->loadObjectList());
-echo "<br/>";
-echo $db->getAffectedRows();
+echo $db->getAffectedRows() . "\n";
+var_dump($db->getTableList());
+var_dump($db->getTableColumns('test_table'));
+var_dump($db->getTableColumns('test_table', false));
 /*
 $fields = array(
     $db->quoteName('name') . "=" . $db->quote("Lollo"),
