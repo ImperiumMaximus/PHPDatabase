@@ -2,7 +2,7 @@
 /* 
 Convenience classes for manipulating a MySQL-based Database 
 Copyright (C) 2014 Fioratto Raffaele 
-Version:    1.0
+Version:    1.1
 Date:       23/07/2014
 Email:      raffaele.fioratto@gmail.com
 
@@ -28,8 +28,7 @@ class DatabaseQuery {
     private $fieldsName = array();
     private $table = NULL;
     private $whereClauses = "";
-    private $orderField = NULL;
-    private $orderType = NULL;
+    private $orderFields = array();
     
     // INSERT FIELDS
     private $insertValues = array();
@@ -72,8 +71,16 @@ class DatabaseQuery {
         return $this;
     }
     
-    public function order($field, $type) {
-        $this->orderField = $field;
+    public function order($fields, $type = 'ASC') {
+        switch (gettype($fields)) {
+            case "string":
+                array_push($this->orderFields, ($this->dbo->getQuoteStrings() ? $this->dbo->quoteName($fields) : $fields) . " " .$type);
+                break;
+            case "array":
+                $qotedFields = ($this->dbo->getQuoteStrings() ? array_map(array($this->dbo, 'quoteName'), $fields) : $fields);
+                $this->orderFields = array_merge($this->orderFields, array_map(function($field) use(&$type) { return $field . " " . $type; }, $fields));
+                break;
+        }
         $this->orderType = $type; 
         return $this;
     }
@@ -120,13 +127,8 @@ class DatabaseQuery {
                 if ("" !== $this->whereClauses) {
                     $queryStr .= " WHERE {$this->whereClauses}";
                 }
-                if (true === isset($this->orderField)) {
-                    $queryStr .= " ORDER BY {$this->orderField}";
-                    if (isset($this->orderType)) {
-                        $queryStr .= " {$this->orderType}"; 
-                    } else {
-                        $queryStr .= " ASC";
-                    }
+                if (false === empty($this->orderFields)) {
+                    $queryStr .= " ORDER BY " . implode(",", $this->orderFields);
                 }
                 return $queryStr;
             case "INSERT INTO":

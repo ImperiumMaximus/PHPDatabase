@@ -1,6 +1,6 @@
 <?php
 
-require_once ('database.php');
+require_once ('../src/database.php');
 
 class stdClassEquality extends stdClass implements Equality {
     public function Equals($obj) {
@@ -155,10 +155,74 @@ class SelectTestCase extends TestCase {
             "1" => $obj1, 
             "2" => $obj2, 
             "3" => $obj3, 
-            "4" => $obj4 );
+            "4" => $obj4 
+        );
         
         $this->assertEquals($this->dbo->getAffectedRows(), 4);
         $this->assertEquals($result, $actual, 'Select and loading objectList indexed with the \'id\' key');
+        
+        
+        $query = $this->dbo->getQuery(true);
+        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where($this->dbo->whereClause('id',"<",5))->order('id');
+        $this->dbo->setQuery($query);
+        $result = $this->dbo->loadAssocList();
+        
+        $actual = array( 
+            array("name" => "John", "surname" => "Smith"), 
+            array("name" => "John", "surname" => "Doe"), 
+            array("name" => "Jane", "surname" => "Doe"), 
+            array("name" => "Peter", "surname" => "Parker") 
+        );
+        
+        $this->assertEquals($this->dbo->getAffectedRows(), 4);
+        $this->assertEquals($result, $actual, 'ORDER BY id ASC');
+        
+        $query = $this->dbo->getQuery(true);
+        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where($this->dbo->whereClause('id',"<",5))->order('id', 'DESC');
+        $this->dbo->setQuery($query);
+        $result = $this->dbo->loadAssocList();
+        
+        $actual = array( 
+            array("name" => "Peter", "surname" => "Parker"),
+            array("name" => "Jane", "surname" => "Doe"),
+            array("name" => "John", "surname" => "Doe"), 
+            array("name" => "John", "surname" => "Smith") 
+        );
+        
+        $this->assertEquals($this->dbo->getAffectedRows(), 4);
+        $this->assertEquals($result, $actual, 'ORDER BY id DESC');
+        
+        
+        $query = $this->dbo->getQuery(true);
+        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where($this->dbo->whereClause('id',"<",5))->order(array('name', 'surname'));
+        $this->dbo->setQuery($query);
+        $result = $this->dbo->loadAssocList();
+        
+        $actual = array( 
+            array("name" => "Jane", "surname" => "Doe"), 
+            array("name" => "John", "surname" => "Doe"),
+            array("name" => "John", "surname" => "Smith"), 
+            array("name" => "Peter", "surname" => "Parker") 
+        );
+        
+        $this->assertEquals($this->dbo->getAffectedRows(), 4);
+        $this->assertEquals($result, $actual, 'ORDER BY name and then by surname ASC');
+        
+        
+        $query = $this->dbo->getQuery(true);
+        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where($this->dbo->whereClause('id',"<",5))->order(array('name', 'surname'), 'DESC');
+        $this->dbo->setQuery($query);
+        $result = $this->dbo->loadAssocList();
+        
+        $actual = array( 
+            array("name" => "Peter", "surname" => "Parker"),
+            array("name" => "John", "surname" => "Smith"), 
+            array("name" => "John", "surname" => "Doe"),
+            array("name" => "Jane", "surname" => "Doe")
+        );
+        
+        $this->assertEquals($this->dbo->getAffectedRows(), 4);
+        $this->assertEquals($result, $actual, 'ORDER BY name and then by surname DESC');
     }
     
     public function TearDown() {
