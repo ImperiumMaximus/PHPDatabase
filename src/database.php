@@ -154,14 +154,14 @@ class DatabaseQuery {
                 if (isset($this->insertValues)) {
                     $queryStr .= " SET " . implode(",", $this->insertValues);
                 }
-                if (false !== empty($this->whereClauses)) {
-                    $queryStr .= " WHERE {$this->whereClauses}";
+                if (false === empty($this->whereClauses)) {
+                    $queryStr .= " WHERE " . implode(' AND ', $this->whereClauses['AND']);
                 }
                 return $queryStr;
             case "DELETE":
                 $queryStr .= " FROM {$this->table}";
-                if ("" !== $this->whereClauses) {
-                    $queryStr .= " WHERE {$this->whereClauses}";
+                if (false === empty($this->whereClauses)) {
+                    $queryStr .= " WHERE " . implode(' AND ', $this->whereClauses['AND']);
                 }
                 return $queryStr;
             default:
