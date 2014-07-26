@@ -27,7 +27,7 @@ class DatabaseQuery {
     // SELECT FIELDS 
     private $fieldsName = array();
     private $table = NULL;
-    private $whereClauses = "";
+    private $whereClauses = array();
     private $orderFields = array();
     
     // INSERT FIELDS
@@ -60,12 +60,21 @@ class DatabaseQuery {
     }
     
     public function where($clauses, $glue = 'AND') {
-        switch (gettype($clauses)) {
+        /*switch (gettype($clauses)) {
             case "string":
                 $this->whereClauses .= $clauses . " ";
                 break;
             case "array":
                 $this->whereClauses .= implode(" " . $glue . " ", $clauses) . " ";
+                break;
+        }
+        return $this;*/
+        switch (gettype($clauses)) {
+            case "string":
+                $this->whereClauses[$glue][] = $this->__escapeClause($clauses); 
+                break;
+            case "array":
+                $this->whereClauses[$glue] = array_merge($this->whereClauses[$glue], array_map(array($this, '__escapeClause'), $clauses));
                 break;
         }
         return $this;
@@ -124,8 +133,8 @@ class DatabaseQuery {
             case "SELECT":
                 $queryStr .= implode(",", $this->fieldsName);
                 $queryStr .= " FROM {$this->table}";
-                if ("" !== $this->whereClauses) {
-                    $queryStr .= " WHERE {$this->whereClauses}";
+                if (false === empty($this->whereClauses)) {
+                    $queryStr .= " WHERE " . implode(' AND ', $this->whereClauses['AND']);
                 }
                 if (false === empty($this->orderFields)) {
                     $queryStr .= " ORDER BY " . implode(",", $this->orderFields);
@@ -145,7 +154,7 @@ class DatabaseQuery {
                 if (isset($this->insertValues)) {
                     $queryStr .= " SET " . implode(",", $this->insertValues);
                 }
-                if ("" !== $this->whereClauses) {
+                if (false !== empty($this->whereClauses)) {
                     $queryStr .= " WHERE {$this->whereClauses}";
                 }
                 return $queryStr;
@@ -158,6 +167,20 @@ class DatabaseQuery {
             default:
                 die("Query type error!");
         }
+    }
+    
+    private function __escapeClause($clause) {
+        $tokens = preg_split("/[=|<|>]+/", $clause, -1, PREG_SPLIT_OFFSET_CAPTURE);
+        $clauseStr = ($this->dbo->getQuoteStrings() ? $this->dbo->quoteName($tokens[0][0]) : $tokens[0][0]);
+        $column_end_offs = $tokens[0][1] + strlen($tokens[0][0]);
+        $clauseStr .= substr($clause, $column_end_offs, $tokens[1][1] - $column_end_offs);
+        $num = $tokens[1][0] + 0;
+        if (("$num" == $tokens[1][0])) {
+           $clauseStr .= $num;
+        } else {
+           $clauseStr .= $this->dbo->quote($tokens[1][0]);
+        }
+        return $clauseStr;
     }
 }
 
@@ -337,7 +360,7 @@ class DatabaseDriver {
         return $this->updateAssoc($table, get_object_vars($object), $keys);
     }
     
-    public function whereClause($column, $op, $value) {
+    /*public function whereClause($column, $op, $value) {
         $clause = ($this->getQuoteStrings() ? $this->quoteName($column) : $column);
         $clause .= $op;
         switch (gettype($value))
@@ -349,7 +372,7 @@ class DatabaseDriver {
                 $clause .= $value;
         }
         return $clause;
-    }
+    }*/
     
     public function getCount() {
         return $this->numQuery;

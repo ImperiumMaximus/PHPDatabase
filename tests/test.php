@@ -3,13 +3,13 @@ require_once ('../src/database.php');
 $db = new DatabaseDriver('localhost', 'testuser', 'jEv5HWz9Wf726WKD', 'testuser');
 
 $query = $db->getQuery(true);
-$query->select(array('name', 'surname'))->from('test_table')->where($db->whereClause('name',"<>",'Pippo'));
-echo $query->toString() . "<br/>";
+$query->select(array('name', 'surname'))->from('test_table')->where('latitude=128.3456');
+echo $query->toString() . "\n";
 $db->setQuery($query);
-var_dump($objList = $db->loadObjectList());
+var_dump($db->loadObjectList());
 echo $db->getAffectedRows() . "\n";
 var_dump($db->getTableList());
-var_dump($db->getTableColumns('test_table'));
+/*var_dump($db->getTableColumns('test_table'));
 var_dump($db->getTableColumns('test_table', false));
 /*
 $fields = array(
