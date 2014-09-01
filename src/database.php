@@ -2,8 +2,8 @@
 /* 
 Convenience classes for manipulating a MySQL-based Database 
 Copyright (C) 2014 Fioratto Raffaele 
-Version:    1.1
-Date:       23/07/2014
+Version:    2.0
+Date:       01/09/2014
 Email:      raffaele.fioratto@gmail.com
 
 This program is free software; you can redistribute it and/or
@@ -21,12 +21,163 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+class DatabaseQueryLogicExpressionNode {
+    private $childrenNodes = array();
+    private $parentNode = NULL;
+    private $type = NULL;
+    private $data = NULL;
+    
+    const NODE_AND = 1;
+    const NODE_OR = 2;
+    const NODE_PARS = 3;
+    const LEAF = 4;
+    
+    public function __construct($type) {
+        $this->type = $type;
+    }
+    
+    public function setChildren($childrenNodes) {
+        $this->childrenNodes = $childrenNodes;
+    }
+    
+    public function getChildren() {
+        return $this->childrenNodes;
+    }
+    
+    public function getChild($index = 0) {
+        return $this->childrenNodes[$index];
+    }
+    
+    public function appendChild($childNode) {
+        array_push($this->childrenNodes, $childNode);
+    }
+    
+    public function setData($data) {
+        $this->data = $data;
+    }
+    
+    public function getData() {
+        return $this->data;
+    }
+    
+    public function setParent($parent) {
+        $this->parentNode = $parent;
+    }
+    
+    public function getType() {
+        return $this->type;
+    }
+}
+
+class DatabaseQueryLogicExpression {
+    
+    private $dbo = NULL;
+    private $rootNode = NULL;
+    
+    public function __construct($dbo) {
+        $this->dbo = $dbo;
+    }
+    
+    public function construct($node) {
+        $this->rootNode = $node;
+    }
+    
+    public function _and() {
+        $clauses = func_get_args();
+        /*return implode($clauses, " AND ");*/
+        $node = new DatabaseQueryLogicExpressionNode(NODE_AND);
+        $node->setChildren($clauses);
+        return $node;
+    }
+    
+    public function _or() {
+        $clauses = func_get_args();
+        /*return implode($clauses, " OR ");*/
+        $node = new DatabaseQueryLogicExpressionNode(NODE_OR);
+        $node->setChildren($clauses);
+        return $node;
+    }
+    
+    public function pars($clause) {
+       // return "($clause)";
+        $node = new DatabaseQueryLogicExpressionNode(NODE_PARS);
+        $node->appendChild($clause);
+        return $node;
+    }
+    
+    public function eq($field, $value) {
+        return $this->__createClause($field, $value, "=");
+    }
+    
+    public function lt($field, $value) {
+        return $this->__createClause($field, $value, "<");
+    }
+    
+    public function lte($field, $value) {
+        return $this->__createClause($field, $value, "<=");
+    }
+    
+    public function gt($field, $value) {
+        return $this->__createClause($field, $value, ">");
+    }
+    
+    public function gte($field, $value) {
+        return $this->__createClause($field, $value, ">=");
+    }
+    
+    public function like($field, $value) {
+        return $this->__createClause($field, $value, "LIKE");
+    }
+    
+    private function __createClause($field, $value, $op) {
+        $clause = ($this->dbo->getQuoteStrings() ? $this->dbo->quoteName($field) : $field) . $op;
+        switch(gettype($value)) {
+            case 'string': 
+                $clause .= $this->dbo->quote($value);
+                break;
+            default:
+                $clause .= $value;
+        }
+        $node = new DatabaseQueryLogicExpressionNode(LEAF);
+        $node->setData($clause);
+        return $node;
+    }
+    
+    public function toString() {
+        return $this->__processNode($this->rootNode);
+    }
+    
+    private function __processNode($node) {
+        switch($node->getType()) {
+            case LEAF:
+                return $node->getData();
+            case NODE_AND: {
+                $clauses = array();
+                foreach($node->getChildren() as $child) {
+                    array_push($clauses, $this->__processNode($child));
+                }
+                return implode($clauses, " AND ");
+            }
+            case NODE_OR: {
+                $clauses = array();
+                foreach($node->getChildren() as $child) {
+                    array_push($clauses, $this->__processNode($child));
+                }
+                return implode($clauses, " OR ");
+            }
+            case NODE_PARS: {
+                return "(" . $this->__processNode($node->getChild()) . ")";
+            }
+        }
+    }
+}
+
 class DatabaseQuery {
     private $queryType = NULL;
     
     // SELECT FIELDS 
     private $fieldsName = array();
-    private $table = NULL;
+    private $tables = array();
     private $whereClauses = array();
     private $orderFields = array();
     
@@ -55,11 +206,11 @@ class DatabaseQuery {
     }
     
     public function from($table) {
-        $this->table = ($this->dbo->getQuoteStrings() ? $this->dbo->quoteName($table) : $table);
+        $this->tables[] = ($this->dbo->getQuoteStrings() ? $this->dbo->quoteName($table) : $table);
         return $this;
     }
     
-    public function where($clauses, $glue = 'AND') {
+    public function where($clauses, $needsEscape = false, $glue = 'AND') {
         /*switch (gettype($clauses)) {
             case "string":
                 $this->whereClauses .= $clauses . " ";
@@ -71,10 +222,10 @@ class DatabaseQuery {
         return $this;*/
         switch (gettype($clauses)) {
             case "string":
-                $this->whereClauses[$glue][] = $this->__escapeClause($clauses); 
+                $this->whereClauses[$glue][] = ($needsEscape ? $this->__escapeClause($clauses) : $clauses); 
                 break;
             case "array":
-                $this->whereClauses[$glue] = array_merge($this->whereClauses[$glue], array_map(array($this, '__escapeClause'), $clauses));
+                $this->whereClauses[$glue] = array_merge($this->whereClauses[$glue], $needsEscape ? array_map(array($this, '__escapeClause'), $clauses) : $clauses);
                 break;
         }
         return $this;
@@ -132,7 +283,7 @@ class DatabaseQuery {
         switch($this->queryType) {
             case "SELECT":
                 $queryStr .= implode(",", $this->fieldsName);
-                $queryStr .= " FROM {$this->table}";
+                $queryStr .= " FROM " . implode($this->tables, ",");
                 if (false === empty($this->whereClauses)) {
                     $queryStr .= " WHERE " . implode(' AND ', $this->whereClauses['AND']);
                 }
@@ -169,6 +320,34 @@ class DatabaseQuery {
         }
     }
     
+    public function getClauseConstructor() {
+        return new DatabaseQueryLogicExpression($this->dbo);
+    }
+    
+    public function eq($field, $value) {
+        return $this->__createClause($field, $value, "=");
+    }
+    
+    public function lt($field, $value) {
+        return $this->__createClause($field, $value, "<");
+    }
+    
+    public function lte($field, $value) {
+        return $this->__createClause($field, $value, "<=");
+    }
+    
+    public function gt($field, $value) {
+        return $this->__createClause($field, $value, ">");
+    }
+    
+    public function gte($field, $value) {
+        return $this->__createClause($field, $value, ">=");
+    }
+    
+    public function like($field, $value) {
+        return $this->__createClause($field, $value, "LIKE");
+    }
+    
     private function __escapeClause($clause) {
         $tokens = preg_split("/[=|<|>]+/", $clause, -1, PREG_SPLIT_OFFSET_CAPTURE);
         $clauseStr = ($this->dbo->getQuoteStrings() ? $this->dbo->quoteName($tokens[0][0]) : $tokens[0][0]);
@@ -181,6 +360,18 @@ class DatabaseQuery {
            $clauseStr .= $this->dbo->quote($tokens[1][0]);
         }
         return $clauseStr;
+    }
+    
+    private function __createClause($field, $value, $op) {
+        $clause = ($this->dbo->getQuoteStrings() ? $this->dbo->quoteName($field) : $field) . $op;
+        switch(gettype($value)) {
+            case 'string': 
+                $clause .= $this->dbo->quote($value);
+                break;
+            default:
+                $clause .= $value;
+        }
+        return $clause;
     }
 }
 
@@ -282,14 +473,22 @@ class DatabaseDriver {
         return $assocList;
     }
     
-    public function quoteName($name) {
+    public function quoteName($name, $alias = NULL) {
         $name = trim($name);
         if (("string" == gettype($name)) && 
                 ("`" !== substr($name, 0, 1)) && ("`" !== substr($name, -1, 1)))
-            
-            return "`" . $this->mysqliObj->real_escape_string($name) . "`";
+            $field = "`" . $this->mysqliObj->real_escape_string($name) . "`";
         else
-            return $name;
+            $field = $name;
+        
+        if (isset($alias)) {
+            if (("string" == gettype($alias)) && 
+                ("`" !== substr($alias, 0, 1)) && ("`" !== substr($alias, -1, 1)))
+            $field .= "AS `" . $alias . "`";
+        else
+            $field .= "AS $alias";
+        }
+        return $field;
     }
     
     public function quote($value, $real_escape = true) {
@@ -339,13 +538,13 @@ class DatabaseDriver {
             switch(gettype($keys)) {
                 case "string":
                     if (true === array_key_exists($keys, $assoc))
-                        $clauses = $this->whereClause($keys,"=",$assoc[$keys]);
+                        $clauses = $query->eq($keys, $assoc[$keys]);
                     break;
                 case "array":
                     $clauses = array();
                     foreach($keys as $key) {
                         if (true === array_key_exists($key, $assoc))
-                            $clauses[] = $this->whereClause($key,"=",$assoc[$key]); 
+                            $clauses[] = $query->eq($key, $assoc[$key]); 
                     }
                     break;
             }

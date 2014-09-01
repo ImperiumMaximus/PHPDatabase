@@ -18,7 +18,7 @@ class InsertTestCase extends TestCase {
         $this->assertEquals($this->dbo->getAffectedRows(), 1);
         
         $query = $this->dbo->getQuery(true);
-        $query->select($columns)->from('test_table')->where("id=$lastId");
+        $query->select($columns)->from('test_table')->where($query->eq("id", $lastId));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadRow();
         
@@ -32,7 +32,7 @@ class InsertTestCase extends TestCase {
         $this->assertEquals($this->dbo->getAffectedRows(), 1);
         
         $query = $this->dbo->getQuery(true);
-        $query->select($columns)->from('test_table')->where("id=$lastId");
+        $query->select($columns)->from('test_table')->where($query->eq("id", $lastId));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadRow();
         
@@ -49,7 +49,7 @@ class InsertTestCase extends TestCase {
         $this->assertEquals($this->dbo->getAffectedRows(), 1);
         
         $query = $this->dbo->getQuery(true);
-        $query->select($columns)->from('test_table')->where("id=$lastId");
+        $query->select($columns)->from('test_table')->where($query->eq("id", $lastId));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadRow();
         
@@ -63,7 +63,7 @@ class InsertTestCase extends TestCase {
         $this->assertEquals($this->dbo->getAffectedRows(), 1);
         
         $query = $this->dbo->getQuery(true);
-        $query->select($columns)->from('test_table')->where("id=$lastId");
+        $query->select($columns)->from('test_table')->where($query->eq("id", $lastId));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadRow();
         

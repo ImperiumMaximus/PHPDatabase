@@ -14,7 +14,7 @@ class SelectTestCase extends TestCase {
     
     public function Run() {
         $query = $this->dbo->getQuery(true);
-        $query->select('surname')->from('test_table')->where('id=2');
+        $query->select('surname')->from('test_table')->where($query->eq("id", 2));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadResult();
         
@@ -22,21 +22,21 @@ class SelectTestCase extends TestCase {
         
         
         $query = $this->dbo->getQuery(true);
-        $query->select('name')->select('surname')->from('test_table')->where('id=2');
+        $query->select('name')->select('surname')->from('test_table')->where($query->eq("id", 2));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadRow();
         
         $this->assertEquals($result, array("John", "Doe"), 'Simple chaining fields with ->select');
         
         $query = $this->dbo->getQuery(true);
-        $query->select('name')->select('surname')->select('telephone')->from('test_table')->where('id=2');
+        $query->select('name')->select('surname')->select('telephone')->from('test_table')->where($query->eq("id", 2));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadRow();
         
         $this->assertEquals($result, array("John", "Doe", "987654321"), 'Double chaining ->select()->select()');
         
         $query = $this->dbo->getQuery(true);
-        $query->select('name')->select(array('surname', 'telephone'))->from('test_table')->where('id=2');
+        $query->select('name')->select(array('surname', 'telephone'))->from('test_table')->where($query->eq("id", 2));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadRow();
         
@@ -44,7 +44,7 @@ class SelectTestCase extends TestCase {
         
         
         $query = $this->dbo->getQuery(true);
-        $query->select(array('name', 'surname'))->from('test_table')->where('id=2');
+        $query->select(array('name', 'surname'))->from('test_table')->where($query->eq("id", 2));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadAssoc();
         
@@ -52,7 +52,7 @@ class SelectTestCase extends TestCase {
         
         
         $query = $this->dbo->getQuery(true);
-        $query->select(array('name', 'surname'))->from('test_table')->where('id=2');
+        $query->select(array('name', 'surname'))->from('test_table')->where($query->eq("id", 2));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadObject();
         
@@ -63,7 +63,7 @@ class SelectTestCase extends TestCase {
         $this->assertEquals($result, $actual);
         
         $query = $this->dbo->getQuery(true);
-        $query->select(array('name', 'surname'))->from('test_table')->where('id<5');
+        $query->select(array('name', 'surname'))->from('test_table')->where($query->lt("id", 5));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadRowList();
         
@@ -74,7 +74,7 @@ class SelectTestCase extends TestCase {
         
         
         $query = $this->dbo->getQuery(true);
-        $query->select(array('name', 'surname'))->from('test_table')->where('id<5');
+        $query->select(array('name', 'surname'))->from('test_table')->where($query->lt("id", 5));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadAssocList();
         
@@ -89,7 +89,7 @@ class SelectTestCase extends TestCase {
         
         
         $query = $this->dbo->getQuery(true);
-        $query->select(array('name', 'surname'))->from('test_table')->where('id<5');
+        $query->select(array('name', 'surname'))->from('test_table')->where($query->lt("id", 5));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadObjectList();
         
@@ -113,7 +113,7 @@ class SelectTestCase extends TestCase {
         
         
         $query = $this->dbo->getQuery(true);
-        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where('id<5');
+        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where($query->lt("id", 5));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadAssocList('id');
         
@@ -128,7 +128,7 @@ class SelectTestCase extends TestCase {
         
         
         $query = $this->dbo->getQuery(true);
-        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where('id<5');
+        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where($query->lt("id", 5));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadObjectList('id');
         
@@ -161,7 +161,7 @@ class SelectTestCase extends TestCase {
         
         
         $query = $this->dbo->getQuery(true);
-        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where('id<5')->order('id');
+        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where($query->lt("id", 5))->order('id');
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadAssocList();
         
@@ -176,7 +176,7 @@ class SelectTestCase extends TestCase {
         $this->assertEquals($result, $actual, 'ORDER BY id ASC');
         
         $query = $this->dbo->getQuery(true);
-        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where('id<5')->order('id', 'DESC');
+        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where($query->lt("id", 5))->order('id', 'DESC');
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadAssocList();
         
@@ -192,7 +192,7 @@ class SelectTestCase extends TestCase {
         
         
         $query = $this->dbo->getQuery(true);
-        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where('id<5')->order(array('name', 'surname'));
+        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where($query->lt("id", 5))->order(array('name', 'surname'));
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadAssocList();
         
@@ -208,7 +208,7 @@ class SelectTestCase extends TestCase {
         
         
         $query = $this->dbo->getQuery(true);
-        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where('id<5')->order(array('name', 'surname'), 'DESC');
+        $query->select('id')->select(array('name', 'surname'))->from('test_table')->where($query->lt("id", 5))->order(array('name', 'surname'), 'DESC');
         $this->dbo->setQuery($query);
         $result = $this->dbo->loadAssocList();
         

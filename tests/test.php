@@ -3,12 +3,17 @@ require_once ('../src/database.php');
 $db = new DatabaseDriver('localhost', 'testuser', 'jEv5HWz9Wf726WKD', 'testuser');
 
 $query = $db->getQuery(true);
-$query->select(array('name', 'surname'))->from('test_table')->where('latitude=128.3456');
+$query->select(array('name', 'surname'))->from('test_table');
+echo $query->eq("id", 2);
 echo $query->toString() . "\n";
 $db->setQuery($query);
-var_dump($db->loadObjectList());
+//var_dump($db->loadObjectList());
 echo $db->getAffectedRows() . "\n";
 var_dump($db->getTableList());
+$clauseConstructor = $query->getClauseConstructor();
+$clauseConstructor->construct($clauseConstructor->_and($clauseConstructor->eq('id', 5), $clauseConstructor->pars($clauseConstructor->_or($clauseConstructor->lt('abc', 'cde'), $clauseConstructor->gt('prova', 3)))));
+//$clauseConstructor->setRoot($clauseConstructor->_and($clauseConstructor->eq('id', 5), $clauseConstructor->lt('id','10')));
+echo $clauseConstructor->toString();
 /*var_dump($db->getTableColumns('test_table'));
 var_dump($db->getTableColumns('test_table', false));
 /*
